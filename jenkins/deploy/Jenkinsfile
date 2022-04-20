@@ -9,11 +9,6 @@ pipeline {
     }
 
     stages {
-        stage('Wait for Stack Ready'){
-            steps{
-                sh(script: 'aws cloudformation wait stack-update-complete --region eu-west-2 --stack-name Gaokao', returnStatus: true)
-            }
-        }
         
         stage('CDK Deploy'){
             steps{
