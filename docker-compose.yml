@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  covid-visualisation:
+    image: deweiliu/covid-visualisation:latest
+    build:
+      context: ./src
+      dockerfile: Dockerfile
+      x-bake:
+        platforms:
+          - linux/amd64
+          - linux/arm64
+    ports:
+      - 80:80
+    container_name: covid-visualisation-container
