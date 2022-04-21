@@ -4,7 +4,7 @@ import * as cdk from '@aws-cdk/core';
 import { CdkStack } from '../lib/main-stack';
 
 const app = new cdk.App();
-new CdkStack(app, 'Gaokao', {
+new CdkStack(app, 'CovidVisualisation', {
   maxAzs: 2,
   appId: 15,
   domain: 'dliu.com',
