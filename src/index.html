@@ -2,7 +2,7 @@
 <html lang="en" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Covid-19 Data Visualisation</title>
     <link rel="stylesheet" type="text/css" href="./css/style.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
@@ -10,15 +10,41 @@
     <section class = "main section">
         <div class = "main body">
             <h1 align="center">COVID-19</h1>
-            <h2 class="content" align="center">Mutations Changes Worldwide vs Death in the UK</h2>
+            <h2 class="content" align="center">Covid Clade Membership (Pie Chart) & Death Toll (Line Chart)</h2>
         </div>
     </section>
-    <div id="container"></div>
-    <svg id="circle"></svg>
-    <div id="pie-svg"></div>
-    <script src="js/chart.js"></script>
+    <h3 style="text-align:center">Select Month of Clade Membership Worldwide (Range: 1- 20) <span id="sMonth"></span></h3>
+    <input type="number" min="1" max="20" step="1" value="1" oninput="if(value>20)value=20" oninput="if(value<0)value=0" id="nValue"  style="margin-left: 49%;margin-bottom: 30px">
+    <div id="pie-svg" align="center"></div>
+    <div id="line-svg" align="center"></div>
     <script src="js/helper.js"></script>
 
 
 </body>
+
+<div class="description text"></div>
+<h3><b>Description</b></h3>
+<hr>
+<font size="4" >To answer question 2 "Analyse the Covid-19 mutations worldwide and their influence on the death toll in the UK. Is there any relationship between them?". To answer this question, design 2 is implemented.
+There are two charts created for visualisation and analysis. One is pie chart about mutation clade membership of Covid-19, another is the line chart showing the
+    death toll each month in the UK. Through observing the charts, users can have understandings in the relationship between the trend of death toll and the clade membership worldwide.</font>
+<h3><b>Data Processing</b></h3>
+<hr>
+<font size="4" >For data processing, the data for the pie chart is .tsv file, and it is already sorted by date in ascending order before imported into script, and read through d3.tsv(). For the data used for line chart, the .csv file is
+by d3.csv() as well. The tsv file are stored into dictionary,including date and clade membership. Then, select range of date for each month, and count the number of each clade (e.g. '20A', '20B'). For the csv file,
+since the original file includes the accumulative death number, that death toll for each month need to be generated manually. The calculation is based on the subtraction between the value of end date and start date of each month.
+For drawing data on charts, all attributes are aligned with corresponding date. The attribute used for "nextstrain_ncov_open_global_metadata.tsv" is "date" and "clade_membership".
+The attributes used for "overview_2022-04-08.csv" are "date" and "cumDeaths28DaysByDeathDate". </font>
+<h3><b>References</b></h3>
+<hr>
+<font size="4" >Some online resources and example are used in this project, the links are given below for references.</font>
+<br>
+<font size="4">Death Toll Data: </font>
+<a href="https://coronavirus.data.gov.uk/details/download">https://coronavirus.data.gov.uk/details/download</a>
+<br>
+<font size="4" >Pie Chart: </font>
+<a href="https://github.com/zjw666/D3_demo/tree/master/src/pieChart" >https://github.com/zjw666/D3_demo/tree/master/src/pieChart</a>
+<br>
+<font size="4" >Line Chart and Dot: </font>
+<a href="https://www.programminghunter.com/article/4270188056/">https://www.programminghunter.com/article/4270188056/</a>
 </html>

@@ -2,29 +2,36 @@
 const dataPath = "./data/nextstrain_ncov_open_global_metadata.tsv"
 const deathPath = './data/overview_2022-04-08.csv'
 
-const  controlArray = []
-d3.tsv(dataPath).then(function (data){
-    let allDate = (data.map(d => d.date))
-    let allcladeMembership = (data.map(d => d.clade_membership))
+let leftIndex = 0
+let rightIndex = 1
+let newDataPieIndex= []
+let lastDay = []
+let newDate = []
+let dataDict = []
+let allcladeMembership
+let allDate
+let currentDateSelect
 
-    var newDate = convertToDate(allDate)
+//import tsv file
+d3.tsv(dataPath).then(function (data){
+     allDate = (data.map(d => d.date))
+     allcladeMembership = (data.map(d => d.clade_membership))
+
+     newDate = convertToDate(allDate)
 
     //create dict
-    var dataDict = []
     for(var i=0;i<newDate.length;i++){
         dataDict.push({
             date:newDate[i],
             value:allcladeMembership[i]
         })
     }
-    console.log("all member printed",dataDict)
 
     //unique member
     let uniqueClades = [...new Set(allcladeMembership)]
 
     let lastDayList = getLastDay()
 
-    var lastDay = []
     var indexOfDate = []
 
     for(var i =0;i<newDate.length;i++)
@@ -43,11 +50,10 @@ d3.tsv(dataPath).then(function (data){
             value:allcladeMembership[indexOfDate[i]],
             index:indexOfDate[i]
         })
-    console.log("new date pie",newDataPie)
 
     //remove same element
     //get correlated index
-    var newDataPieIndex= []
+
     newDataPieIndex[0] = 0
     for(var i=0;i<newDataPie.length-1;i++){
         if(newDataPie[i].date.toString() != newDataPie[i+1].date.toString())
@@ -56,34 +62,36 @@ d3.tsv(dataPath).then(function (data){
             continue
     }
 
+    selectRange()
+})
     //count label number
     //choose range
-    let uniqueClades_0 = [...new Set(allcladeMembership.slice(newDataPieIndex[2],newDataPieIndex[3]))]
+function selectRange(leftIndex = 0,rightIndex = 1) {
+    let uniqueClades_0 = [...new Set(allcladeMembership.slice(newDataPieIndex[leftIndex], newDataPieIndex[rightIndex]))]
 
 
     var uniqueClades_dict = new Array()
     //init dict
-    for(var i=0;i<uniqueClades_0.length;i++)
+    for (var i = 0; i < uniqueClades_0.length; i++)
         uniqueClades_dict[uniqueClades_0[i]] = 0
 
-    // console.log("prinit dict",uniqueClades_dict)
     var cladesDictPie = []
-    for(var i=newDataPieIndex[2];i<newDataPieIndex[3];i++){
+    for (var i = newDataPieIndex[leftIndex]; i < newDataPieIndex[rightIndex]; i++) {
         uniqueClades_dict[allcladeMembership[i]]++
     }
 
-    for(var key in uniqueClades_dict){
-        cladesDictPie.push({name:key,value:uniqueClades_dict[key]})
+    for (var key in uniqueClades_dict) {
+        cladesDictPie.push({name: key, value: uniqueClades_dict[key]})
     }
 
     drawPieChart(cladesDictPie)
 
+}
 
-})
 
 function drawPieChart(data){
-    var width = 400,
-        height = 400,
+    var width = 500,
+        height = 500,
         padding = {
             top: 40,
             right: 40,
@@ -91,31 +99,28 @@ function drawPieChart(data){
             left: 40
         };
 
-    var colors = d3.schemeSet2;
+    var colors = d3.schemePaired;
 
     var svg = d3.select("#pie-svg")
         .append('svg')
+        .attr("id","svg1")
         .attr('width', (width * 2) + 'px')
         .attr('height', (height * 2) + 'px');
 
-    // 生成饼布局
+
+    //pie chart
     var pie = d3.pie().value(function(d) {
         return d.value;
     })(data);
 
     var radius = Math.min(width, height);
 
-    /*
-     * 弧线生成器
-     * .innerRadius 内圆半径
-     * .outerRadius 外圆半径
-     * .centroid 计算弧的中心
-     */
+   //arc generator
     var arc = d3.arc()
         .innerRadius(0)
         .outerRadius(radius / 2);
 
-    // 一个更大的圆弧，用来获取标注线外圈的坐标
+    // larger arc for drawing
     var outArc = d3.arc()
         .innerRadius(radius / 2.5)
         .outerRadius(radius/1.2);
@@ -138,7 +143,7 @@ function drawPieChart(data){
             return d[1];
         });
 
-    // 获取标注线的点数据
+    // get notation line
     var getLabelLine = function(d, type) {
         var startPos = d.startAngle + (d.endAngle - d.startAngle) / 2;
         var data = [];
@@ -160,17 +165,18 @@ function drawPieChart(data){
         .data(pie)
         .join("g");
 
-    // 绘制饼图
+
+    // draw pie chart
     container.append("path")
         .attr("stroke", "white")
         .attr("d", arc)
-        .attr("fill", function(d, i) {
+        .attr("fill", function (d, i) {
             return colors[i];
         });
 
-    // 绘制标注线
+    // mark line
     container.append("path")
-        .datum(function(d) {
+        .datum(function (d) {
             return getLabelLine(d, "path");
         })
         .attr("class", "tips")
@@ -179,71 +185,74 @@ function drawPieChart(data){
         .attr("stroke-width", 1)
         .attr("stroke-linejoin", "round")
         .attr("stroke-linecap", "round")
-        .attr("d", line);
+        .attr("d", line)
+        .style('visibility', 'hidden')
 
-    // 绘制标注线上文字
-    container.append("text")
-        .datum(function(d) {
-            d.pos = getLabelLine(d, "text")[2];
-            return d;
-        })
-        .text(function(d) {
-            return (d.data.name);
-        })
-        .attr("dx", function(d) {
-            return d.pos[0]
-        })
-        .attr("dy", function(d) {
-            return d.pos[1]
-        });
-    //second
-    container.append("text")
-        .datum(function(d) {
-            d.pos = getLabelLine(d, "text")[2];
-            return d;
-        })
-        .text(function(d) {
-            return ("Num: "+d.data.value);
-        })
-        .attr("dx", function(d) {
-            return d.pos[0]-10
-        })
-        .attr("dy", function(d) {
-            return d.pos[1]-20
-        });
 
-    //tittle
-    svg.append('text')
-        .classed('title', true)
-        .attr('x', width)
-        .attr('y', -20)
-        .attr('dy', '2em')
-        .text('Clade Membership Pie Chart')
-        .attr('fill', 'black')
-        .attr('text-anchor', 'middle')
-        .attr('stroke', 'black');
+        // draw text on notation line
+        container.append("text")
+            .datum(function (d) {
+                d.pos = getLabelLine(d, "text")[2];
+                return d;
+            })
+            .text(function (d) {
+                return (d.data.name);
+            })
+            .attr("dx", function (d) {
+                return d.pos[0]
+            })
+            .attr("dy", function (d) {
+                return d.pos[1]
+            }).style('visibility', 'hidden')
+
+        //second
+        container.append("text")
+            .datum(function (d) {
+                d.pos = getLabelLine(d, "text")[2];
+                return d;
+            })
+            .text(function (d) {
+                return ("Num: " + d.data.value);
+            })
+            .attr("dx", function (d) {
+                return d.pos[0] - 10
+            })
+            .attr("dy", function (d) {
+                return d.pos[1] - 20
+            }).style('visibility', 'hidden');
+
+        currentDateSelect = dataDict[newDataPieIndex[rightIndex]].date
+
+        //title
+        svg.append('text')
+            .classed('title', true)
+            .attr('x', width)
+            .attr('y', -20)
+            .attr('dy', '2em')
+            .text('Clade Membership Pie Chart:  '+showDateOnText(currentDateSelect.toString()))
+            .attr('fill', 'black')
+            .attr('text-anchor', 'middle')
+            .attr('stroke', 'black');
 
     let tooltip = d3.select('body').append('div');
     container.on('mouseover', function(event){
-        var lanel
         const[x, y] = d3.pointer(event);
         d3.select(this).select('path').transition().attr('d', arcLarger)
-
-        // tooltip.html("111").transition().duration(500).style('left', x+"px")
-        //     .style('top', y+"px").style('opacity', 1.0);
-
+        d3.select(this).selectAll('text').style('visibility', 'visible')
+        d3.select(this).select('.tips').style('visibility', 'visible')
     }) .on('mouseleave', function(){
         d3.select(this).select('path').transition().attr('d', arcNormal)
-        // tooltip.transition().style('opacity',0)
+        d3.select(this).selectAll('text').style('visibility', 'hidden')
+        d3.select(this).selectAll('.tips').style('visibility', 'hidden')
     })
 
     //label
-    let label=svg.selectAll('.label')      //添加右上角的标签
+    let label=svg.selectAll('.label')
         .data(data)
         .enter()
         .append('g')
-        .attr("transform","translate(" + (width / 2 + radius/2 * 2.3) + "," + 20 + ")");
-    label.append('rect')        //标签中的矩形
+        .attr("transform","translate(" + (width / 2 + radius/2 *2.3) + "," +10 + ")");
+    label.append('rect')
         .style('fill',function(d,i){
             return colors[i];
         })
@@ -251,13 +260,13 @@ function drawPieChart(data){
         .attr("y",function(d,i){
             return (height - radius/2) / 2 + (i - 1) * 30;
         })
-        .attr('rx','10')     //rx=ry 会出现圆角
+        .attr('rx','10')
         .attr('ry','10')
         .attr('width',50)
         .attr('height',20);
-    label.append('text')            //标签中的文字
+    label.append('text')
         .attr('x',function(d,i){
-            return 65;              //因为rect宽度是50，所以把文字偏移15,在后面再将文字设置居中
+            return 55;
         })
         .attr("y",function(d,i){
             return (height - radius/2) / 2 + 15 + (i - 1) * 30;
@@ -272,33 +281,27 @@ function drawPieChart(data){
             "font-weight":600
         });
 
-    // 图注个数
-    let count = 0;
-    let before = 0;
-    // 图注文字
-    let text=svg.selectAll(".text")
-        .data(data) //返回是pie(data0)
-        .enter().append("g")
-        .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
-        .append("text")
-        .style('text-anchor', function(d, i) {
-            //根据文字在是左边还是右边，在右边文字是start，文字默认都是start。
-            return (d.startAngle + d.endAngle)/2 < Math.PI ? 'start' : 'end';
-        })
-        .attr('transform', function(d, i) {
-            var pos = arc.centroid(d);      //centroid(d)计算弧中心
-            pos[0] = radius/2*((d.startAngle+d.endAngle) / 2 < Math.PI ? 1.4 : -1.4)})
-
-
-
 }
 
+    //change i
+    // when the input range changes update value
+    d3.select("#nValue").on("input", function() {
+        update(+this.value);
+    });
 
+    // adjust the text
+    function update(nValue) {
+        leftIndex = nValue-1
+        rightIndex = nValue
+        d3.selectAll("#svg1").remove()
+        selectRange(leftIndex,rightIndex)
+    }
+
+
+//line chart
 d3.csv(deathPath).then(function (data){
     let allDate = (data.map(d => d.date))
     let allDeathNum = (data.map(d => d.cumDeaths28DaysByDeathDate))
-    // console.log(allDate)
-    // console.log(allDeathNum)
 
     //count all valid data
     var k =0
@@ -316,10 +319,8 @@ d3.csv(deathPath).then(function (data){
     //slice array
     allDeathNum = allDeathNum.slice(0,k)
     allDate = allDate.slice(0,k)
-    // console.log(allDeathNum)
-    // console.log(allDate)
+
     var newDate = convertToDate(allDate)
-    console.log(newDate)
 
     let lastDayList = getLastDay()
     var lastDay = []
@@ -348,10 +349,6 @@ d3.csv(deathPath).then(function (data){
         var nextNum = deathPerMonth[i+1]
         deathPerMonthUpdate.push(nextNum-curNum)
     }
-    console.log("test death",deathPerMonthUpdate)
-    // console.log("new day last",lastDay)
-    // console.log("all death per month",deathPerMonth)
-
     var resdict = []
     for(var i=0;i<lastDay.length;i++){
         resdict.push({
@@ -359,8 +356,6 @@ d3.csv(deathPath).then(function (data){
             value:deathPerMonthUpdate[i]
         })
     }
-    console.log("resdict",resdict)
-
 
     var min = d3.min(resdict, function(d) {
         return d.value;
@@ -369,7 +364,7 @@ d3.csv(deathPath).then(function (data){
         return d.value;
     })
 
-    // 图表的宽度和高度
+    // height and width
     var width = 1000,
         height = 500,
         padding = {
@@ -394,7 +389,7 @@ d3.csv(deathPath).then(function (data){
         .scale(yScale)
         .ticks(10);
 
-    var svg = d3.select('body')
+    var svg = d3.select("#line-svg")
         .append('svg')
         .attr('width', width + 'px')
         .attr('height', height + 'px');
@@ -412,7 +407,15 @@ d3.csv(deathPath).then(function (data){
         .attr('transform', 'translate(' + padding.left + ',' + padding.top + ')')
         .call(yAxis);
 
-
+    svg.append('text')
+        .classed('title', true)
+        .attr('x', width*0.85)
+        .attr('y', 10)
+        .attr('dy', '2em')
+        .text('Monthly Death Toll in the UK')
+        .attr('fill', 'black')
+        .attr('text-anchor', 'middle')
+        .attr('stroke', 'black');
     //ling plot
     var linePath = d3.line()
         .x(function(d){ return xScale(d[0]) })
@@ -426,7 +429,7 @@ d3.csv(deathPath).then(function (data){
             return yScale(d.value);
         });
 
-    // 生成折线
+    // path
     svg.append("path")
         .datum(resdict)
         .attr("fill", "none")
@@ -438,7 +441,6 @@ d3.csv(deathPath).then(function (data){
 
     for(var i=0;i<deathPerMonthUpdate.length;i++)
         deathPerMonthUpdate[i] = deathPerMonthUpdate[i].toString()
-    console.log("date value is",deathPerMonthUpdate)
 
     var tooltip = d3.select("body")
         .append("div")
@@ -447,7 +449,17 @@ d3.csv(deathPath).then(function (data){
         .style("visibility", "hidden")
         .text("");
 
+    //death info
+    svg.append("text")
+        .attr("x",800)
+        .attr("y", 100)
+        .attr("dy", ".35em")
+        .attr("stroke","black")
+        .text("Death Toll: ");
+
+
     let circle = resdict.forEach((d,i) => {
+        var value = d.value
         svg.append("circle")
             .data(resdict)
             .attr("id", "circleTooltip")
@@ -457,22 +469,22 @@ d3.csv(deathPath).then(function (data){
             .on("mouseover", function(d,i,n){
                 d3.select(this)
                 .attr("fill","red")
-
-                // console.log(deathPerMonthUpdate[i])
-                // return tooltip.style("visibility", "visible").text(deathPerMonthUpdate[i])
+                //death value
+                svg.append("text")
+                    .attr("x",900)
+                    .attr("y", 100)
+                    .attr("id","numText")
+                    .attr("dy", ".35em")
+                    .attr("stroke","black")
+                    .text(value)
             })
             .on("mouseout", function(){
                     d3.select(this)
                         .attr("fill","black")
+                    d3.select('#numText').remove()
                 return tooltip.style("visibility", "hidden")
                 })
     })
-
-
-
-    // d3.selectAll("circle").on("mouseover", d => {
-    //     tooltip.style("opacity",1)
-    //         .html(<p class="show text"> ${d.value} </p>)
 
 })
 
@@ -497,9 +509,23 @@ function getLastDay(){
             lastDayArr.push(d)
         }
 
-    console.log("last day",lastDayArr)
     return lastDayArr
 }
 
+//select date according to month selected
+function showDateOnText(date){
+    var month = ['Jan','Feb',"Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    var year = ['2020','2021','2022']
+    var month_select
+    var year_select
+    for(var i =0;i<month.length;i++)
+        if(date.search(month[i])!=-1)
+            month_select = month[i]
+    for(var i =0;i<year.length;i++)
+        if(date.search(year[i])!=-1)
+            year_select = year[i]
+
+    return month_select+" "+year_select
+}
 
 
