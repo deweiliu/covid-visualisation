@@ -8,7 +8,7 @@ new CdkStack(app, 'CovidVisualisation', {
   maxAzs: 2,
   appId: 15,
   domain: 'dliu.com',
-  dnsRecord: 'ywy',
+  dnsRecord: 'covid',
   appName: 'covid-visualisation',
   instanceCount: 2,
   tags: { service: 'covid-visualisation' },
