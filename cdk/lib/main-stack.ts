@@ -68,5 +68,31 @@ export class CdkStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, 'DnsName', { value: record.domainName });
+
+    // To be deleted: set coivd temporarily
+
+    const dnsRecord = 'coivd';
+    const dnsName = `${dnsRecord}.dliu.com`;
+    new elb.ApplicationListenerRule(this, "ListenerRule1", {
+      listener: get.albListener,
+      priority: get.priority + 1,
+      targetGroups: [albTargetGroup],
+      conditions: [elb.ListenerCondition.hostHeaders([dnsName])],
+    });
+
+    const certificate1 = new acm.Certificate(this, 'SSL1', {
+      domainName: dnsName,
+      validation: acm.CertificateValidation.fromDns(get.hostedZone),
+    });
+    get.albListener.addCertificates('AddCertificate1', [certificate1]);
+
+    const record1 = new route53.CnameRecord(this, "AliasRecord1", {
+      zone: get.hostedZone,
+      domainName: get.alb.loadBalancerDnsName,
+      recordName: dnsRecord,
+      ttl: Duration.hours(1),
+    });
+    new cdk.CfnOutput(this, 'DnsName1', { value: record1.domainName });
+
   }
 }
